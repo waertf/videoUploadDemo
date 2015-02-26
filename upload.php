@@ -16,6 +16,7 @@ $tempFile = $_FILES['Filedata']['tmp_name'];
 $targetFileName = $file_name.'.'.getExt( $_FILES['Filedata']['name']);
 $userName 	= ($_POST['userName']);
 $writeMode = ($_POST['writeMode']);
+$targetFile=dirname(__FILE__).'/'.$targetFileName;
 //Checking filesize
 $POST_MAX_SIZE = ini_get('post_max_size');
 $unit = strtoupper(substr($POST_MAX_SIZE, -1));
@@ -58,28 +59,7 @@ if (!isset($_FILES['Filedata'])) {
     }
     echo 'Connected successfully';
 
-    $sql = "show tables like \"".$userName."\"";
-    $result = $conn->query($sql);
-    if($result->num_rows>0){
-        //table exist
-    }
-    else{
-        //create table
-        $sql="CREATE TABLE `".$userName."` (
-  `sn` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `filename` varchar(32) NOT NULL,
-  `target_filename` varchar(32) NOT NULL,
-  `filesize_in_kb` int(11) NOT NULL,
-  `upload_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY `sn` (`sn`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1";
-        if ($conn->query($sql) === TRUE) {
-            echo "Table MyGuests created successfully";
-        } else {
-            echo "Error creating table: " . $conn->error;
-        }
 
-    }
 // query user id
 $sql="SELECT
 	user_list.sn
@@ -94,6 +74,30 @@ if ($result->num_rows > 0) {
     // output data of each row
     if($row = $result->fetch_assoc()) {
         $userID=$row['sn'];
+
+        $sql = "show tables like \"".$userName."\"";
+        $result = $conn->query($sql);
+        if($result->num_rows>0){
+            //table exist
+        }
+        else{
+            //create table
+            $sql="CREATE TABLE `".$userID."` (
+  `sn` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `filename` varchar(32) NOT NULL,
+  `target_filename` varchar(32) NOT NULL,
+  `filesize_in_kb` int(11) NOT NULL,
+  `upload_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `sn` (`sn`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1";
+            if ($conn->query($sql) === TRUE) {
+                echo "Table MyGuests created successfully";
+            } else {
+                echo "Error creating table: " . $conn->error;
+            }
+
+        }
+
         $file_size=round($_FILES['Filedata']["size"]/1000);
         $sql="SELECT
 	SUM(filesize_in_kb)
@@ -111,6 +115,13 @@ if ($result->num_rows > 0) {
                 else
                 {
                     //insert file
+                    move_uploaded_file($tempFile,$targetFile);
+                    $video = new Video(\SqlFileInfo($targetFileName));
+                    $anotherVideo = $video->encodeInto("flv");
+                    $tumb=$video->getThumbnail();
+                    echo "WxH: {$anotherVideo->getWidth()}x{$anotherVideo->getWidth()}";
+
+                    print_r($video->getRawInfo());
                 }
             }
         }
