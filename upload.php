@@ -7,9 +7,9 @@
  */
 
 //mysql
-$servername = "localhost";
-$username = "username";
-$password = "password";
+$serverName = 'localhost';
+$username = 'username';
+$password = 'password';
 
 $file_name	= time().RandomString(5);
 $tempFile = $_FILES['Filedata']['tmp_name'];
@@ -50,13 +50,13 @@ if (!isset($_FILES['Filedata'])) {
     exit(0);
 }
 // Create connection
-    $conn = new mysqli($servername, $username, $password);
+    $conn = new mysqli($serverName, $username, $password);
 
 // Check connection
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
     }
-    echo "Connected successfully";
+    echo 'Connected successfully';
 
     $sql = "show tables like \"".$userName."\"";
     $result = $conn->query($sql);
@@ -67,7 +67,6 @@ if (!isset($_FILES['Filedata'])) {
         //create table
         $sql="CREATE TABLE `".$userName."` (
   `sn` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `uid` int(11) NOT NULL,
   `filename` varchar(32) NOT NULL,
   `target_filename` varchar(32) NOT NULL,
   `filesize_in_kb` int(11) NOT NULL,
@@ -89,6 +88,39 @@ FROM
 WHERE
 	user_list.`name` = \'".$userName."\'";
 
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // output data of each row
+    if($row = $result->fetch_assoc()) {
+        $userID=$row['sn'];
+        $file_size=round($_FILES['Filedata']["size"]/1000);
+        $sql="SELECT
+	SUM(filesize_in_kb)
+      FROM"." ".$userName;
+
+        $result = $conn->query($sql);
+        if ($result->num_rows > 0)
+        {
+            if($row = $result->fetch_assoc()) {
+                $totalQuatoUsed=$row['SUM(filesize_in_kb)'];
+                if(floatval($totalQuatoUsed)+$file_size>5242880)
+                {
+                    //over quato limit:5G
+                }
+                else
+                {
+                    //insert file
+                }
+            }
+        }
+        else {
+            echo '0 results';
+        }
+    }
+} else {
+    echo '0 results';
+}
 
 //function used to display error
 function upload_error($error)
@@ -110,4 +142,3 @@ function RandomString($length)
 function GetExt($file){
     return substr($file, strrpos($file,'.') + 1);
 }
-?>
