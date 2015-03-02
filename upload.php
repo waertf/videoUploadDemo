@@ -5,11 +5,12 @@
  * Date: 2/25/2015
  * Time: 11:25 AM
  */
-
+include("Video.php");
 //mysql
 $serverName = 'localhost';
-$username = 'username';
-$password = 'password';
+$username = 'root';
+$password = 'root';
+$dbname = "alonso";
 
 $file_name	= time().RandomString(5);
 $tempFile = $_FILES['Filedata']['tmp_name'];
@@ -51,7 +52,7 @@ if (!isset($_FILES['Filedata'])) {
     exit(0);
 }
 // Create connection
-    $conn = new mysqli($serverName, $username, $password);
+    $conn = new mysqli($serverName, $username, $password,$dbname);
 
 // Check connection
     if ($conn->connect_error) {
@@ -66,7 +67,7 @@ $sql="SELECT
 FROM
 	user_list
 WHERE
-	user_list.`name` = \'".$userName."\'";
+	user_list.name = '".$userName."'";
 
 $result = $conn->query($sql);
 
@@ -75,19 +76,29 @@ if ($result->num_rows > 0) {
     if($row = $result->fetch_assoc()) {
         $userID=$row['sn'];
 
-        $sql = "show tables like \"".$userName."\"";
+        $sql = "show tables like '".$userID."'";
         $result = $conn->query($sql);
         if($result->num_rows>0){
             //table exist
         }
         else{
             //create table
+            //datetime for php over 5.5
             $sql="CREATE TABLE `".$userID."` (
   `sn` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `filename` varchar(32) NOT NULL,
   `target_filename` varchar(32) NOT NULL,
   `filesize_in_kb` int(11) NOT NULL,
   `upload_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `sn` (`sn`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1";
+            //TIMESTAMP for php 5.5 and under
+            $sql="CREATE TABLE `".$userID."` (
+  `sn` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `filename` varchar(32) NOT NULL,
+  `target_filename` varchar(32) NOT NULL,
+  `filesize_in_kb` int(11) NOT NULL,
+  `upload_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY `sn` (`sn`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1";
             if ($conn->query($sql) === TRUE) {
@@ -101,7 +112,7 @@ if ($result->num_rows > 0) {
         $file_size=round($_FILES['Filedata']["size"]/1000);
         $sql="SELECT
 	SUM(filesize_in_kb)
-      FROM"." ".$userName;
+      FROM"." `".$userID.'`';
 
         $result = $conn->query($sql);
         if ($result->num_rows > 0)
@@ -111,6 +122,15 @@ if ($result->num_rows > 0) {
                 if(floatval($totalQuatoUsed)+$file_size>5242880)
                 {
                     //over quato limit:5G
+                    switch($writeMode)
+                    {
+                        case "overWrite":
+                            break;
+                        case "denyWrite":
+                            upload_error("Cannot upload file because of exceed of quato,5G");
+                            exit(0);
+                            break;
+                    }
                 }
                 else
                 {
@@ -121,16 +141,19 @@ if ($result->num_rows > 0) {
                     $tumb=$video->getThumbnail();
                     echo "WxH: {$anotherVideo->getWidth()}x{$anotherVideo->getWidth()}";
 
+                    //wriet to sql
+                    $sqlCmd='INSERT INTO '.$userID.' (filename, target_filename, filesize_in_kb) VALUES (\''.$_FILES['Filedata']['name'].'\', \''.$targetFile.'\', \''.$file_size.'\')';
+                    SqlInsert($conn,$sqlCmd);
                     print_r($video->getRawInfo());
                 }
             }
         }
         else {
-            echo '0 results';
+            echo '1-0 results';
         }
     }
 } else {
-    echo '0 results';
+    echo '2-0 results';
 }
 
 //function used to display error
@@ -152,4 +175,15 @@ function RandomString($length)
 //Function Used TO Get Extensio Of File
 function GetExt($file){
     return substr($file, strrpos($file,'.') + 1);
+}
+
+function SqlInsert($sqlObject,$sqlCmd)
+{
+    if($sqlObject->query($sqlCmd)=== TRUE)
+    {
+        echo "New record created successfully";
+    }
+    else {
+        echo "Error: " . $sqlCmd . "<br>" . $sqlObject->error;
+    }
 }
