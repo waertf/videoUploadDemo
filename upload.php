@@ -5,7 +5,7 @@
  * Date: 2/25/2015
  * Time: 11:25 AM
  */
-include("Video.php");
+//include("Video.php");
 //mysql
 $serverName = 'localhost';
 $username = 'root';
@@ -16,6 +16,7 @@ $file_name	= time().RandomString(5);
 $tempFile = $_FILES['Filedata']['tmp_name'];
 $targetFileName = $file_name.'.'.getExt( $_FILES['Filedata']['name']);
 $userName 	= ($_POST['userName']);
+//$userName = 'a';
 $writeMode = ($_POST['writeMode']);
 $targetFile=dirname(__FILE__).'/'.$targetFileName;
 //Checking filesize
@@ -122,6 +123,7 @@ if ($result->num_rows > 0) {
                 $totalQuatoUsed=$row['SUM(filesize_in_kb)'];
                 if(floatval($totalQuatoUsed)+$file_size>5242880)
                 {
+                    //$writeMode="overWrite";
                     //over quato limit:5G
                     switch($writeMode)
                     {
@@ -143,10 +145,15 @@ FROM
                                         $sn=$row['Min(sn)'];
                                         $target_filename=$row['target_filename'];
                                         $filesize_in_kb=floatval($row['filesize_in_kb']);
-                                        $myFileName=basename($target_filename);
+                                        $myFileName=basename($target_filename,".flv");
                                         shell_exec("rm ".dirname(__FILE__).'/'.$target_filename);
-                                        shell_exec("rm ".dirname(__FILE__).'/'.$myFileName.'.jpg');
+                                        shell_exec("rm ".dirname(__FILE__).'/'.$userID.'/'.$myFileName.'.jpg');
                                         $sql="DELETE FROM `1` WHERE (`sn`='".$sn."')";
+                                        if ($conn->query($sql) === TRUE) {
+                                            echo "Record deleted successfully";
+                                        } else {
+                                            echo "Error deleting record: " . $conn->error;
+                                        }
                                         $tmpFileSize-=$filesize_in_kb;
                                         if($tmpFileSize>0)
                                             continue;
