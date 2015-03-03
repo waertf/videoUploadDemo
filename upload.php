@@ -127,6 +127,53 @@ if ($result->num_rows > 0) {
                     {
                         case "overWrite":
                             //delete oldest file then insert new file
+                            $tmpFileSize=$file_size;
+                            while(true)
+                            {
+                                $sql="SELECT
+	Min(sn),
+	target_filename,
+	filesize_in_kb
+FROM
+	`".$userID."`";
+                                $result = $conn->query($sql);
+                                if ($result->num_rows > 0)
+                                    if($row = $result->fetch_assoc())
+                                    {
+                                        $sn=$row['Min(sn)'];
+                                        $target_filename=$row['target_filename'];
+                                        $filesize_in_kb=floatval($row['filesize_in_kb']);
+                                        $myFileName=basename($target_filename);
+                                        shell_exec("rm ".dirname(__FILE__).'/'.$target_filename);
+                                        shell_exec("rm ".dirname(__FILE__).'/'.$myFileName.'.jpg');
+                                        $sql="DELETE FROM `1` WHERE (`sn`='".$sn."')";
+                                        $tmpFileSize-=$filesize_in_kb;
+                                        if($tmpFileSize>0)
+                                            continue;
+                                        else
+                                            break;
+                                    }
+                            }
+                            {
+                                //insert file
+                                move_uploaded_file($tempFile,$targetFile);
+                                /*
+                                $video = new Video(\SqlFileInfo($targetFileName));
+                                $anotherVideo = $video->encodeInto("flv");
+                                $tumb=$video->getThumbnail();
+                                echo "WxH: {$anotherVideo->getWidth()}x{$anotherVideo->getWidth()}";
+            */
+                                $fileFlv=dirname(__FILE__).'/'.$userID.'/'.$file_name.'.flv';
+                                $flvJpg=dirname(__FILE__).'/'.$userID.'/'.$file_name.'.jpg';
+                                $videoJPGWidthheight = "120x72";
+                                echo shell_exec("/usr/bin/ffmpeg -i ".$targetFile." -ar 22050 -ab 32 -f flv -s 320x256 ".$fileFlv."");
+                                echo shell_exec("rm ".$targetFile);
+                                echo shell_exec("/usr/bin/ffmpeg -i ".$fileFlv." -vframes 1 -ss 00:00:06 -s 120x72 -f image2 ".$flvJpg." >/dev/null 2>/dev/null &");
+                                //wriet to sql
+                                $sqlCmd='INSERT INTO `'.$userID.'` (filename, target_filename, filesize_in_kb) VALUES (\''.$_FILES['Filedata']['name'].'\', \''.$userID.'/'.$file_name.'.flv'.'\', \''.$file_size.'\')';
+                                SqlInsert($conn,$sqlCmd);
+                                print_r($video->getRawInfo());
+                            }
                             break;
                         case "denyWrite":
                             upload_error("Cannot upload file because of exceed of quato,5G");
