@@ -88,7 +88,7 @@ if ($result->num_rows > 0) {
   `sn` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `filename` varchar(32) NOT NULL,
   `target_filename` varchar(32) NOT NULL,
-  `filesize_in_kb` int(11) NOT NULL,
+  `filesize_in_kb` varchar(32) NOT NULL,
   `upload_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY `sn` (`sn`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1";
@@ -97,7 +97,7 @@ if ($result->num_rows > 0) {
   `sn` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `filename` varchar(32) NOT NULL,
   `target_filename` varchar(32) NOT NULL,
-  `filesize_in_kb` int(11) NOT NULL,
+  `filesize_in_kb` varchar(32) NOT NULL,
   `upload_time` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY `sn` (`sn`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1";
@@ -136,13 +136,20 @@ if ($result->num_rows > 0) {
                 {
                     //insert file
                     move_uploaded_file($tempFile,$targetFile);
+                    /*
                     $video = new Video(\SqlFileInfo($targetFileName));
                     $anotherVideo = $video->encodeInto("flv");
                     $tumb=$video->getThumbnail();
                     echo "WxH: {$anotherVideo->getWidth()}x{$anotherVideo->getWidth()}";
+*/
+                    $fileFlv=dirname(__FILE__).'/'.$file_name.'.flv';
+                    $flvJpg=dirname(__FILE__).'/'.$file_name.'.jpg';
+                    $videoJPGWidthheight = "120x72";
+                    echo shell_exec("/usr/bin/ffmpeg -i ".$targetFile." -ar 22050 -ab 32 -f flv -s 320x256 ".$fileFlv."");
 
+                    echo shell_exec("/usr/bin/ffmpeg -i ".$fileFlv." -vframes 1 -ss 00:00:06 -s 120x72 -f image2 ".$flvJpg." >/dev/null 2>/dev/null &");
                     //wriet to sql
-                    $sqlCmd='INSERT INTO '.$userID.' (filename, target_filename, filesize_in_kb) VALUES (\''.$_FILES['Filedata']['name'].'\', \''.$targetFile.'\', \''.$file_size.'\')';
+                    $sqlCmd='INSERT INTO `'.$userID.'` (filename, target_filename, filesize_in_kb) VALUES (\''.$_FILES['Filedata']['name'].'\', \''.$targetFile.'\', \''.$file_size.'\')';
                     SqlInsert($conn,$sqlCmd);
                     print_r($video->getRawInfo());
                 }
