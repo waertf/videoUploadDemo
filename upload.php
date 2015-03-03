@@ -126,6 +126,7 @@ if ($result->num_rows > 0) {
                     switch($writeMode)
                     {
                         case "overWrite":
+                            //delete oldest file then insert new file
                             break;
                         case "denyWrite":
                             upload_error("Cannot upload file because of exceed of quato,5G");
@@ -147,7 +148,7 @@ if ($result->num_rows > 0) {
                     $flvJpg=dirname(__FILE__).'/'.$userID.'/'.$file_name.'.jpg';
                     $videoJPGWidthheight = "120x72";
                     echo shell_exec("/usr/bin/ffmpeg -i ".$targetFile." -ar 22050 -ab 32 -f flv -s 320x256 ".$fileFlv."");
-
+                    echo shell_exec("rm ".$targetFile);
                     echo shell_exec("/usr/bin/ffmpeg -i ".$fileFlv." -vframes 1 -ss 00:00:06 -s 120x72 -f image2 ".$flvJpg." >/dev/null 2>/dev/null &");
                     //wriet to sql
                     $sqlCmd='INSERT INTO `'.$userID.'` (filename, target_filename, filesize_in_kb) VALUES (\''.$_FILES['Filedata']['name'].'\', \''.$userID.'/'.$file_name.'.flv'.'\', \''.$file_size.'\')';
